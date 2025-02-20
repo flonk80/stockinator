@@ -5,6 +5,8 @@ VisualStudioVersion = 17.11.35327.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Stockinator", "src\Stockinator\Stockinator.csproj", "{7077E16B-A77E-4E13-AD8E-44F839F29B54}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stockinator.Common", "src\Stockinator.Common\Stockinator.Common.csproj", "{0766BBE4-8381-4745-97C0-FE76A7E07573}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{7077E16B-A77E-4E13-AD8E-44F839F29B54}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7077E16B-A77E-4E13-AD8E-44F839F29B54}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7077E16B-A77E-4E13-AD8E-44F839F29B54}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0766BBE4-8381-4745-97C0-FE76A7E07573}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0766BBE4-8381-4745-97C0-FE76A7E07573}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0766BBE4-8381-4745-97C0-FE76A7E07573}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0766BBE4-8381-4745-97C0-FE76A7E07573}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
