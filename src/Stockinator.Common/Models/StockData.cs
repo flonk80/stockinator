@@ -2,8 +2,8 @@
 {
     public class StockData
     {
-        public required string TickerSymbol { get; init; }
+        public required string TickerSymbol { get; set; }
 
-        public required IEnumerable<DailyStock> DailyStocks { get; init; }
+        public required IEnumerable<DailyStock> DailyStocks { get; set; }
     }
 }
