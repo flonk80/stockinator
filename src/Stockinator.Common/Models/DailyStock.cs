@@ -2,16 +2,22 @@
 {
     public class DailyStock
     {
-        public required double Open { get; init; }
-
-        public required double Close { get; init; }
-
-        public required double High { get; init; }
-
-        public required double Low { get; init; }
-
-        public required long Volume { get; init; }
-
         public required long UnixTimeStamp { get; set; }
+
+        public required double Open { get; set; }
+
+        public required double Close { get; set; }
+
+        public required double High { get; set; }
+
+        public required double Low { get; set; }
+
+        public double OpenNormalized { get; set; }
+
+        public double CloseNormalized { get; set; }
+
+        public double HighNormalized { get; set; }
+
+        public double LowNormalized { get; set; }
     }
 }

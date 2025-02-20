@@ -1,4 +1,5 @@
 ﻿using Stockinator.Common.DataFetching;
+using Stockinator.Common.Extensions;
 
 var client = new HttpClient();
 
@@ -7,3 +8,7 @@ client.DefaultRequestHeaders.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.
 var dataFetcher = new DataFetcher(client);
 
 var result = await dataFetcher.FetchStockPeriodAsync("AAPL", DateTime.Today.AddDays(-10), DateTime.Today);
+
+result.NormalizePrices();
+
+Console.WriteLine("kca");

@@ -49,7 +49,6 @@ namespace Stockinator.Common.DataFetching
                         High = quotes[0]?.High?[i] ?? throw new Exception("High is invalid"),
                         Low = quotes[0]?.Low?[i] ?? throw new Exception("Low is invalid"),
                         Open = quotes[0]?.Open?[i] ?? throw new Exception("Open is invalid"),
-                        Volume = quotes[0]?.Volume?[i] ?? throw new Exception("Volume is invalid"),
                     })
                 };
             }
