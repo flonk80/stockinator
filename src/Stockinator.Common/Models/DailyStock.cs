@@ -2,8 +2,6 @@
 {
     public class DailyStock
     {
-        public required string TickerSymbol { get; init; }
-
         public required double Open { get; init; }
 
         public required double Close { get; init; }

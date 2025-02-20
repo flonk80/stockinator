@@ -18,7 +18,7 @@ namespace Stockinator.Common.DataFetching
             _httpClient = httpClient;
         }
 
-        public async Task<IEnumerable<DailyStock>> FetchStockPeriodAsync(string tickerSymbol, DateTime from, DateTime to)
+        public async Task<StockData> FetchStockPeriodAsync(string tickerSymbol, DateTime from, DateTime to)
         {
             var fromUnix = GetUnixTimestamp(from);
             var toUnix = GetUnixTimestamp(to);
@@ -39,16 +39,19 @@ namespace Stockinator.Common.DataFetching
                 var timeStamps = chart.Result?[0].TimeStamp ?? throw new Exception("Timestamp is null");
                 var quotes = chart.Result[0].Indicators?.Quote ?? throw new Exception("Quotes is null");
 
-                return timeStamps.Select((x, i) => new DailyStock
+                return new StockData
                 {
                     TickerSymbol = tickerSymbol,
-                    UnixTimeStamp = timeStamps[i],
-                    Close = quotes[0]?.Close?[i] ?? throw new Exception("Close is invalid"),
-                    High = quotes[0]?.High?[i] ?? throw new Exception("High is invalid"),
-                    Low = quotes[0]?.Low?[i] ?? throw new Exception("Low is invalid"),
-                    Open = quotes[0]?.Open?[i] ?? throw new Exception("Open is invalid"),
-                    Volume = quotes[0]?.Volume?[i] ?? throw new Exception("Volume is invalid"),
-                });
+                    DailyStocks = timeStamps.Select((x, i) => new DailyStock
+                    {
+                        UnixTimeStamp = timeStamps[i],
+                        Close = quotes[0]?.Close?[i] ?? throw new Exception("Close is invalid"),
+                        High = quotes[0]?.High?[i] ?? throw new Exception("High is invalid"),
+                        Low = quotes[0]?.Low?[i] ?? throw new Exception("Low is invalid"),
+                        Open = quotes[0]?.Open?[i] ?? throw new Exception("Open is invalid"),
+                        Volume = quotes[0]?.Volume?[i] ?? throw new Exception("Volume is invalid"),
+                    })
+                };
             }
 
             throw new Exception("Couldn't fetch stock period");
