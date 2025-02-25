@@ -133,7 +133,7 @@ namespace Stockinator.Logic
             for (int i = Lookback; i < data.shape[0]; i++)
             {
                 // Correct way to slice in NumSharp
-                var xSlice = data[$"{i - Lookback}:{i}, :"].reshape(new Shape(Lookback, -1));
+                var xSlice = data[$"{i - Lookback}:{i}"].reshape(new Shape(Lookback, -1));
                 var ySlice = data[i, 1].reshape(new Shape(1, 1)); // Extract single target value
 
                 X.Add(xSlice);
