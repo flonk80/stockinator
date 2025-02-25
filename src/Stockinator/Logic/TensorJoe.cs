@@ -29,12 +29,25 @@ namespace Stockinator.Logic
         {
             foreach (var stock in stockDatas)
             {
-                var data = stock.DailyStocks
+                var dataList = stock.DailyStocks
                     .OrderBy(s => s.UnixTimeStamp)
                     .Select(s => new double[] { s.Open, s.Close, s.High, s.Low, s.VolumeNormalized })
-                    .ToArray();
+                    .ToList(); // Convert to List to manage indexing
 
-                stockData.Add(stock.TickerSymbol, np.array(data));
+                int rows = dataList.Count;
+                int cols = dataList[0].Length;
+
+                double[,] dataArray = new double[rows, cols];
+
+                for (int i = 0; i < rows; i++)
+                {
+                    for (int j = 0; j < cols; j++)
+                    {
+                        dataArray[i, j] = dataList[i][j]; // Copy values to 2D array
+                    }
+                }
+
+                stockData.Add(stock.TickerSymbol, np.array(dataArray)); // Now should work
             }
         }
 
@@ -72,6 +85,7 @@ namespace Stockinator.Logic
             var (X_train, Y_train) = CreateTrainingData(data);
 
             var model = BuildLstmModel(Lookback, FeatureCount);
+
             model.fit(X_train, Y_train, batch_size: 16, epochs: 10);
 
             models[tickerSymbol] = model;
@@ -118,11 +132,15 @@ namespace Stockinator.Logic
 
             for (int i = Lookback; i < data.shape[0]; i++)
             {
-                X.Add(data[$"{i - Lookback}:{i}, :"]);
-                Y.Add(data[$"{i}, 1"]);  // Closing price as target
+                // Correct way to slice in NumSharp
+                var xSlice = data[$"{i - Lookback}:{i}, :"].reshape(new Shape(Lookback, -1));
+                var ySlice = data[i, 1].reshape(new Shape(1, 1)); // Extract single target value
+
+                X.Add(xSlice);
+                Y.Add(ySlice);
             }
 
-            return (np.array(X.ToArray()), np.array(Y.ToArray()));
+            return (np.concatenate([.. X]), np.concatenate([.. Y]));
         }
 
         private NDArray PreparePredictionData(string tickerSymbol, long timestamp)
