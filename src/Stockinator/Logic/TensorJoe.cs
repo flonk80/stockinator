@@ -132,15 +132,15 @@ namespace Stockinator.Logic
 
             for (int i = Lookback; i < data.shape[0]; i++)
             {
-                // Correct way to slice in NumSharp
-                var xSlice = data[$"{i - Lookback}:{i}"].reshape(new Shape(Lookback, -1));
-                var ySlice = data[i, 1].reshape(new Shape(1, 1)); // Extract single target value
+                var xSlice = data[new Slice(i - Lookback, i), Slice.All].reshape(new Shape(Lookback, -1));
+                var ySlice = data[i, new Slice(1, 2)].reshape(new Shape(1, 1)); // Fix for ySlice
 
                 X.Add(xSlice);
                 Y.Add(ySlice);
             }
 
-            return (np.concatenate([.. X]), np.concatenate([.. Y]));
+            return (np.concatenate(X.ToArray(), axis: 0).reshape(new Shape(-1, Lookback, data.shape[1])),
+                    np.concatenate(Y.ToArray(), axis: 0).reshape(new Shape(-1, 1)));
         }
 
         private NDArray PreparePredictionData(string tickerSymbol, long timestamp)
