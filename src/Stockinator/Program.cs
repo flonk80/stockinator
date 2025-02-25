@@ -7,7 +7,7 @@ client.DefaultRequestHeaders.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.
 
 var dataFetcher = new DataFetcher(client);
 
-var result = await dataFetcher.FetchStockPeriodAsync("AAPL", DateTime.Today.AddDays(-3650), DateTime.Today);
+var result = await dataFetcher.FetchStockPeriodAsync("MSFT", DateTime.Today.AddDays(-365), DateTime.Today.AddDays(-1));
 
 var joe = new TensorJoe([result]);
 

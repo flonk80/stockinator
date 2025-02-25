@@ -2,7 +2,7 @@
 {
     public class DailyStock
     {
-        private static readonly double _normalizationIndex = 100.0;
+        private static readonly double _normalizationIndex = 10.0;
 
         private readonly double _globalBaselinePrice;
         private readonly double _globalBaselineVolume;

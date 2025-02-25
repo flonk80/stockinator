@@ -22,7 +22,7 @@ namespace Stockinator.Logic
         private Dictionary<string, Model> models = new Dictionary<string, Model>();
         private Dictionary<string, NDarray> stockData = new Dictionary<string, NDarray>();
         private List<StockData> stockData2 = new List<StockData>();
-        private const int Lookback = 15;  // Days to look back for prediction
+        private const int Lookback = 120;  // 120
         private const int FeatureCount = 5; // Open, Close, High, Low, Volume
 
         public TensorJoe(List<StockData> stockDatas)
@@ -86,12 +86,6 @@ namespace Stockinator.Logic
 
         private void TrainModel(string tickerSymbol)
         {
-            //if (!stockData.ContainsKey(tickerSymbol))
-            //{
-            //    throw new Exception($"No data available for {tickerSymbol}");
-            //}
-
-            //var data = stockData[tickerSymbol];
             var (X_train, Y_train) = CreateTrainingData(stockData2[0]);
 
             var model = BuildLstmModel();
@@ -99,7 +93,7 @@ namespace Stockinator.Logic
             Console.WriteLine(X_train.shape);
             Console.WriteLine(Y_train.shape);
 
-            model.Fit(X_train, Y_train, batch_size: 30, epochs: 50);
+            model.Fit(X_train, Y_train, batch_size: 18, epochs: 25);  // 18, 25
 
             //models[tickerSymbol] = model;
             //SaveModel(model, tickerSymbol);
@@ -109,105 +103,24 @@ namespace Stockinator.Logic
         {
             var model = new Sequential();
 
-            model.Add(new LSTM(units: 50, 
+            model.Add(new LSTM(units: 64, 
                                input_shape: (Lookback, FeatureCount), 
                                return_sequences: true));
 
-            model.Add(new LSTM(units: 50, 
+            model.Add(new Dropout(0.1));
+
+            model.Add(new LSTM(units: 64, 
                                return_sequences: false));
 
-            model.Add(new Dense(units: 25, 
+            model.Add(new Dense(units: 50, 
                                 activation: "relu"));
 
             model.Add(new Dense(units: 1));
 
-            //model.Add(new LSTM(new LSTMArgs
-            //{
-            //    Units = 50,
-            //    ReturnSequences = true,
-            //    InputShape = new Shape(lookback, featureCount)
-            //}));
-            //model.Add(new LSTM(new LSTMArgs
-            //{
-            //    Units = 50,
-            //    ReturnSequences = false
-            //}));
-            //model.Add(new Dense(new DenseArgs
-            //{
-            //    Units = 25,
-            //    Activation = keras.activations.Relu
-            //}));
-            //model.Add(new Dense(new DenseArgs
-            //{
-            //    Units = 1
-            //}));
-
-            //model.Layers.AddRange(new List<ILayer>
-            //{
-            //    new LSTM(new LSTMArgs
-            //    {
-            //        Units = 50,
-            //        ReturnSequences = true,
-            //        InputShape = (lookback, featureCount)
-            //    }),
-            //    new LSTM(new LSTMArgs 
-            //    { 
-            //        Units = 50, 
-            //        ReturnSequences = false 
-            //    }),
-            //    new Dense(new DenseArgs
-            //    {
-            //        Units = 25,
-            //        Activation = keras.activations.Relu
-            //    }),
-            //    new Dense(new DenseArgs 
-            //    { 
-            //        Units = 1 
-            //    })
-            //});
-
-            model.Compile(optimizer: new Adam(), loss: "mean_squared_error");
+            model.Compile(optimizer: new Adam(lr: 0.001f), loss: "mean_squared_error");
 
             return model;
         }
-
-        //private (NDArray, NDArray) CreateTrainingData(NDArray data)
-        //{
-        //    var X = new List<NDArray>();
-        //    var Y = new List<NDArray>();
-            
-        //    for (int i = Lookback; i < data.shape[0]; i++)
-        //    {
-        //        var xSlice = data[new Slice(i - Lookback, i), Slice.All].reshape(new Shape(Lookback, -1));
-        //        var ySlice = data[i, new Slice(1, 2)].reshape(new Shape(1, 1));
-
-        //        X.Add(xSlice);
-        //        Y.Add(ySlice);
-        //    }
-
-        //    return (np.concatenate(X.ToArray()).reshape(new Shape(-1, Lookback, data.shape[1])),
-        //            np.concatenate(Y.ToArray()).reshape(new Shape(-1, 1)));
-        //}
-
-        //private (NDarray, NDarray) CreateTrainingData(StockData data)
-        //{
-        //    var rand = new Random();
-
-        //    var dailyStockCount = data.DailyStocks.Count();
-        //    var xData = new double[dailyStockCount, 1, 1];
-        //    var yData = new double[dailyStockCount, 1];
-
-        //    for (int i = 0; i < dailyStockCount; i++)
-        //    {
-        //        var timestamp = data.DailyStocks[i].UnixTimeStamp; // Example Unix timestamp
-        //        var value = data.DailyStocks[i].Close; // Some function of timestamp
-
-        //        xData[i, 0, 0] = timestamp;
-        //        yData[i, 0] = value;
-        //    }
-
-        //    return (new NDarray(xData), new NDarray(yData));
-        //}
 
         private (NDarray, NDarray) CreateTrainingData(StockData data)
         {
