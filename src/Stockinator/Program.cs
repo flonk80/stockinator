@@ -20,7 +20,6 @@ Console.WriteLine(pridction);
 
 
 
-
 //using Tensorflow.Keras.Engine;
 //using Tensorflow.NumPy;
 //using static Tensorflow.Binding;
@@ -31,8 +30,14 @@ Console.WriteLine(pridction);
 //using Tensorflow.Keras.Optimizers;
 //using Tensorflow.Keras.ArgsDefinition.Rnn;
 //using Tensorflow.Keras.ArgsDefinition;
+//using Tensorflow.Operations;
+//using Stockinator.Logic;
 
 //tf.enable_eager_execution();
+
+//////////var fnn = new tensortest();
+//////////fnn.PrepareData();
+//////////fnn.Train();
 
 //var model = CreateLSTMModel();
 
@@ -49,6 +54,19 @@ Console.WriteLine(pridction);
 
 //static IModel CreateLSTMModel()
 //{
+//    //var inputs = keras.Input(shape: (1, 1));
+
+//    //var layers = new LayersApi();
+
+//    //var outputs = layers.LSTM(50, return_sequences: false).Apply(inputs);
+//    //outputs = layers.Dense(units: 1).Apply(outputs);
+
+//    //var model = keras.Model(inputs, outputs, name: "some_model");
+
+//    //model.compile(optimizer: keras.optimizers.Adam(), loss: keras.losses.MeanSquaredError(), metrics: new string[] { "mae" });
+
+//    //return model;
+
 //    //var inputs = keras.Input(shape: new Shape(1, 1)); // Single timestamp input (time step, features)
 //    //var lstm = keras.layers.LSTM(50, return_sequences: false).Apply(inputs);
 //    //var dense = keras.layers.Dense(1).Apply(lstm);
@@ -62,23 +80,24 @@ Console.WriteLine(pridction);
 
 
 
-//    // Define input layer explicitly
-//    //var model = keras.Sequential(
-//    //[
-//    //    new LSTM(new LSTMArgs
-//    //    {
-//    //        Units = 50,
-//    //        ReturnSequences = false,
-//    //        InputShape = new[] { 1, 1, }
-//    //    }),
 
-//    //    //keras.layers.LSTM(units: 50, return_sequences: false, input),
-//    //    //keras.layers.Dense(units: 1),
-//    //    new Dense(new DenseArgs
-//    //    {
-//    //        Units = 1
-//    //    })
-//    //]);
+//    //    // Define input layer explicitly
+//    //    //var model = keras.Sequential(
+//    //    //[
+//    //    //    new LSTM(new LSTMArgs
+//    //    //    {
+//    //    //        Units = 50,
+//    //    //        ReturnSequences = false,
+//    //    //        InputShape = new[] { 1, 1, }
+//    //    //    }),
+
+//    //    //    //keras.layers.LSTM(units: 50, return_sequences: false, input),
+//    //    //    //keras.layers.Dense(units: 1),
+//    //    //    new Dense(new DenseArgs
+//    //    //    {
+//    //    //        Units = 1
+//    //    //    })
+//    //    //]);
 
 //    var model = keras.Sequential();
 
@@ -88,7 +107,7 @@ Console.WriteLine(pridction);
 //        {
 //            Units = 50,
 //            ReturnSequences = false,
-//            InputShape = new[] { 1, 1, }
+//            InputShape = (1, 1)
 //        }),
 
 //        //keras.layers.LSTM(units: 50, return_sequences: false, input),

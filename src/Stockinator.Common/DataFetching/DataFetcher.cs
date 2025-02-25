@@ -52,7 +52,7 @@ namespace Stockinator.Common.DataFetching
                         Low = quote.Low?[i] ?? throw new Exception("Low is invalid"),
                         Open = quote.Open?[i] ?? throw new Exception("Open is invalid"),
                         Volume = quote.Volume?[i] ?? throw new Exception("Volume is invalid"),
-                    })
+                    }).ToList()
                 };
             }
 
