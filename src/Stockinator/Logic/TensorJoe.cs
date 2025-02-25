@@ -86,6 +86,9 @@ namespace Stockinator.Logic
 
             var model = BuildLstmModel(Lookback, FeatureCount);
 
+            Console.WriteLine(X_train.shape);
+            Console.WriteLine(Y_train.shape);
+
             model.fit(X_train, Y_train, batch_size: 16, epochs: 10);
 
             models[tickerSymbol] = model;
@@ -133,14 +136,14 @@ namespace Stockinator.Logic
             for (int i = Lookback; i < data.shape[0]; i++)
             {
                 var xSlice = data[new Slice(i - Lookback, i), Slice.All].reshape(new Shape(Lookback, -1));
-                var ySlice = data[i, new Slice(1, 2)].reshape(new Shape(1, 1)); // Fix for ySlice
+                var ySlice = data[i, new Slice(1, 2)].reshape(new Shape(1, 1));
 
                 X.Add(xSlice);
                 Y.Add(ySlice);
             }
 
-            return (np.concatenate(X.ToArray(), axis: 0).reshape(new Shape(-1, Lookback, data.shape[1])),
-                    np.concatenate(Y.ToArray(), axis: 0).reshape(new Shape(-1, 1)));
+            return (np.concatenate(X.ToArray()).reshape(new Shape(-1, Lookback, data.shape[1])),
+                    np.concatenate(Y.ToArray()).reshape(new Shape(-1, 1)));
         }
 
         private NDArray PreparePredictionData(string tickerSymbol, long timestamp)
