@@ -1,5 +1,5 @@
 ﻿using Stockinator.Common.DataFetching;
-using Stockinator.Common.Extensions;
+using Stockinator.Logic;
 
 var client = new HttpClient();
 
@@ -7,8 +7,10 @@ client.DefaultRequestHeaders.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.
 
 var dataFetcher = new DataFetcher(client);
 
-var result = await dataFetcher.FetchStockPeriodAsync("AAPL", DateTime.Today.AddDays(-10), DateTime.Today);
+var result = await dataFetcher.FetchStockPeriodAsync("AAPL", DateTime.Today.AddDays(-183), DateTime.Today.AddDays(-1));
 
-result.NormalizePrices();
+var joe = new TensorJoe();
 
-Console.WriteLine("kca");
+// do something with joe
+
+Console.WriteLine("pridction");

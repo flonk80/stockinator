@@ -37,19 +37,22 @@ namespace Stockinator.Common.DataFetching
                 }
 
                 var timeStamps = chart.Result?[0].TimeStamp ?? throw new Exception("Timestamp is null");
-                var quotes = chart.Result[0].Indicators?.Quote ?? throw new Exception("Quotes is null");
+                var quote = chart.Result[0].Indicators?.Quote?[0] ?? throw new Exception("Quote is null");
+                var baselinePrice = quote.Open?[0] ?? throw new Exception("No baseline price could be set");
+                var baselineVolume = quote.Volume?[0] ?? throw new Exception("No baseline volume could be set");
 
                 return new StockData
                 {
                     TickerSymbol = tickerSymbol,
-                    DailyStocks = timeStamps.Select((x, i) => new DailyStock
+                    DailyStocks = timeStamps.Select((x, i) => new DailyStock(baselinePrice, baselineVolume)
                     {
-                        UnixTimeStamp = timeStamps[i],
-                        Close = quotes[0]?.Close?[i] ?? throw new Exception("Close is invalid"),
-                        High = quotes[0]?.High?[i] ?? throw new Exception("High is invalid"),
-                        Low = quotes[0]?.Low?[i] ?? throw new Exception("Low is invalid"),
-                        Open = quotes[0]?.Open?[i] ?? throw new Exception("Open is invalid"),
-                    })
+                        UnixTimeStamp = x,
+                        Close = quote.Close?[i] ?? throw new Exception("Close is invalid"),
+                        High = quote.High?[i] ?? throw new Exception("High is invalid"),
+                        Low = quote.Low?[i] ?? throw new Exception("Low is invalid"),
+                        Open = quote.Open?[i] ?? throw new Exception("Open is invalid"),
+                        Volume = quote.Volume?[i] ?? throw new Exception("Volume is invalid"),
+                    }).ToList()
                 };
             }
 

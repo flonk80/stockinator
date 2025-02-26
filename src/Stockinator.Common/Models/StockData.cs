@@ -4,6 +4,6 @@
     {
         public required string TickerSymbol { get; set; }
 
-        public required IEnumerable<DailyStock> DailyStocks { get; set; }
+        public required List<DailyStock> DailyStocks { get; set; }
     }
 }
