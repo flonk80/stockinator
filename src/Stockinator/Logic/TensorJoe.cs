@@ -1,133 +1,157 @@
 ﻿using Stockinator.Common.Models;
-//using Tensorflow.Keras.Engine;
-using static Tensorflow.Binding;
-//using static Tensorflow.KerasApi;
-using Tensorflow.Keras;
-using Tensorflow;
-//using Tensorflow.Keras.Layers;
-//using Tensorflow.Keras.Optimizers;
-//using Tensorflow.Keras.ArgsDefinition.Rnn;
-using Tensorflow.Keras.ArgsDefinition;
 using Python.Runtime;
-using Keras;
 using Keras.Layers;
 using Keras.Models;
 using Keras.Optimizers;
 using Numpy;
+using System.Text.Json;
 
 namespace Stockinator.Logic
 {
     public class TensorJoe
     {
-        private Dictionary<string, Model> models = new Dictionary<string, Model>();
-        private Dictionary<string, NDarray> stockData = new Dictionary<string, NDarray>();
-        private List<StockData> stockData2 = new List<StockData>();
-        private const int Lookback = 120;  // 120
-        private const int FeatureCount = 5; // Open, Close, High, Low, Volume
+        private const int BatchSize = 16;
+        private const int Epochs = 25;
+        private const int Lookback = 30;  // 120
+        private const int FeatureCount = 5;
+        private const string ModelDataDirectory = "C:\\Stockinator\\ModelData";
+        private const string WeightsDirectory = $"{ModelDataDirectory}\\ModelWeights";
 
-        public TensorJoe(List<StockData> stockDatas)
+        private readonly List<ModelData> _models = [];
+        
+        public string[] AvailableModels => _models.Select(x => x.TickerSymbol).ToArray();
+
+        public TensorJoe()
         {
-            stockData2 = stockDatas;
-            
             PythonEngine.Initialize();
-            
-            //LoadStockData(stockDatas);
+
+            Directory.CreateDirectory(WeightsDirectory);
+
+            LoadModels();
         }
 
-        // Loads stock data into memory
-        private void LoadStockData(List<StockData> stockDatas)
+        //public float PredictPrice(long timestamp, string tickerSymbol)
+        //{
+        //    // Ensure model is trained for this ticker
+        //    if (!models.ContainsKey(tickerSymbol))
+        //    {
+        //        Console.WriteLine($"Training model for {tickerSymbol}...");
+        //        TrainModel(tickerSymbol);
+        //    }
+
+        //    var model = models[tickerSymbol];
+        //    var inputData = PreparePredictionData(tickerSymbol, timestamp);
+
+        //    if (inputData == null)
+        //    {
+        //        Console.WriteLine("Insufficient data to make a prediction.");
+        //        return float.NaN;
+        //    }
+
+        //    var prediction = model.Predict(inputData);
+
+        //    return 0;
+        //}
+
+        public void TrainModel(StockData stockData)
         {
-            foreach (var stock in stockDatas)
-            {
-                var dataList = stock.DailyStocks
-                    .OrderBy(s => s.UnixTimeStamp)
-                    .Select(s => new double[] { s.Open, s.Close, s.High, s.Low, s.VolumeNormalized })
-                    .ToList(); // Convert to List to manage indexing
-
-                int rows = dataList.Count;
-                int cols = dataList[0].Length;
-
-                double[,] dataArray = new double[rows, cols];
-
-                for (int i = 0; i < rows; i++)
-                {
-                    for (int j = 0; j < cols; j++)
-                    {
-                        dataArray[i, j] = dataList[i][j]; // Copy values to 2D array
-                    }
-                }
-
-                stockData.Add(stock.TickerSymbol, np.array(dataArray)); // Now should work
-            }
-        }
-
-        public float PredictPrice(long timestamp, string tickerSymbol)
-        {
-            // Ensure model is trained for this ticker
-            if (!models.ContainsKey(tickerSymbol))
-            {
-                Console.WriteLine($"Training model for {tickerSymbol}...");
-                TrainModel(tickerSymbol);
-            }
-
-            var model = models[tickerSymbol];
-            var inputData = PreparePredictionData(tickerSymbol, timestamp);
-
-            if (inputData == null)
-            {
-                Console.WriteLine("Insufficient data to make a prediction.");
-                return float.NaN;
-            }
-
-            var prediction = model.Predict(inputData);
-
-            return 0;
-        }
-
-        private void TrainModel(string tickerSymbol)
-        {
-            var (X_train, Y_train) = CreateTrainingData(stockData2[0]);
+             var (knownData, targetDate) = CreateTrainingData(stockData);
 
             var model = BuildLstmModel();
-            model.Summary();
-            Console.WriteLine(X_train.shape);
-            Console.WriteLine(Y_train.shape);
 
-            model.Fit(X_train, Y_train, batch_size: 18, epochs: 25);  // 18, 25
+            Console.WriteLine("Training model...");
+            var modelHistory = model.Fit(knownData, targetDate, batch_size: BatchSize, epochs: Epochs);
 
-            //models[tickerSymbol] = model;
-            //SaveModel(model, tickerSymbol);
+            var modelData = new ModelData
+            {
+                TickerSymbol = stockData.TickerSymbol,
+                NewestDataTimestamp = stockData.DailyStocks[^1].UnixTimeStamp,
+                ModelWeightsPath = $"{WeightsDirectory}\\{stockData.TickerSymbol}_weights.h5",
+                Loss = modelHistory.HistoryLogs["loss"],
+                MeanSquaredError = modelHistory.HistoryLogs["mae"],
+                SequentialModel = model
+            };
+
+            SaveModel(modelData);
         }
 
-        private Sequential BuildLstmModel()
+        private void LoadModels()
+        {
+            Console.WriteLine("Loading models...");
+
+            if (_models == null)
+            {
+                throw new Exception("Model list is null???");
+            }
+
+            foreach (var file in Directory.GetFiles(ModelDataDirectory)
+                                          .Where(x => x.Contains(".json", StringComparison.OrdinalIgnoreCase)))
+            {
+                var modelData = JsonSerializer.Deserialize<ModelData>(File.ReadAllText(file)) ?? 
+                    throw new Exception($"Error when loading file: {file}");
+
+                var model = BuildLstmModel();
+                model.LoadWeight(modelData.ModelWeightsPath);
+
+                modelData.SequentialModel = model;
+
+                _models.Add(modelData);
+            }
+
+            Console.WriteLine($"Found and loaded {_models.Count} models!");
+        }
+
+        private void SaveModel(ModelData modelData)
+        {
+            if (modelData.SequentialModel == null)
+            {
+                throw new Exception($"Can't save a model if the model weights are null: {modelData.TickerSymbol}");
+            }
+
+            var modelDataPath = $"{ModelDataDirectory}\\{modelData.TickerSymbol}.json";
+
+            modelData.SequentialModel.SaveWeight(modelData.ModelWeightsPath); // save weights to disk
+            File.WriteAllText(modelDataPath, JsonSerializer.Serialize(modelData));
+
+            if (_models.Exists(x => x.TickerSymbol == modelData.TickerSymbol))
+            {
+                _models[_models.FindIndex(x => x.TickerSymbol == modelData.TickerSymbol)] = modelData;
+            }
+            else
+            {
+                _models.Add(modelData);
+            }            
+        }
+
+        private static Sequential BuildLstmModel()
         {
             var model = new Sequential();
 
-            model.Add(new LSTM(units: 64, 
+            model.Add(new LSTM(units: 50, // 64
                                input_shape: (Lookback, FeatureCount), 
                                return_sequences: true));
 
-            model.Add(new Dropout(0.1));
-
-            model.Add(new LSTM(units: 64, 
+            model.Add(new LSTM(units: 50, // 64
                                return_sequences: false));
 
-            model.Add(new Dense(units: 50, 
+            model.Add(new Dense(units: 25, // 32
                                 activation: "relu"));
 
-            model.Add(new Dense(units: 1));
+            model.Add(new Dense(units: 1)); // 1
 
-            model.Compile(optimizer: new Adam(lr: 0.001f), loss: "mean_squared_error");
+            model.Compile(optimizer: new Adam(lr: 0.001f), loss: "mean_squared_error", metrics: ["mae"]); 
 
             return model;
         }
 
-        private (NDarray, NDarray) CreateTrainingData(StockData data)
+        private static (NDarray, NDarray) CreateTrainingData(StockData data)
         {
             var dailyStockCount = data.DailyStocks.Count;
 
             if (dailyStockCount < Lookback)
+            {
                 throw new ArgumentException("Not enough data points to create training sequences.");
+            }
 
             var xData = new double[dailyStockCount - Lookback + 1, Lookback, FeatureCount];
             var yData = new double[dailyStockCount - Lookback + 1, 1];
@@ -142,21 +166,21 @@ namespace Stockinator.Logic
                     xData[i, j, 3] = data.DailyStocks[i + j].LowNormalized;
                     xData[i, j, 4] = data.DailyStocks[i + j].VolumeNormalized;
                 }
-                yData[i, 0] = data.DailyStocks[i + Lookback - 1].CloseNormalized; // Predict the last day's close price
+                yData[i, 0] = data.DailyStocks[i + Lookback - 1].CloseNormalized;
             }
 
             return (new NDarray(xData), new NDarray(yData));
         }
 
-        private NDarray PreparePredictionData(string tickerSymbol, long timestamp)
-        {
-            if (!stockData.ContainsKey(tickerSymbol)) return null;
+        //private NDarray PreparePredictionData(string tickerSymbol, long timestamp)
+        //{
+        //    if (!stockData.ContainsKey(tickerSymbol)) return null;
 
-            var data = stockData[tickerSymbol];
-            if (data.shape[0] < Lookback) return null;
+        //    var data = stockData[tickerSymbol];
+        //    if (data.shape[0] < Lookback) return null;
 
-            return np.expand_dims(data[$"{data.shape[0] - Lookback}:{data.shape[0]}, :"], axis: 0);
-        }
+        //    return np.expand_dims(data[$"{data.shape[0] - Lookback}:{data.shape[0]}, :"], axis: 0);
+        //}
 
         //private void SaveModel(Model model, string tickerSymbol)
         //{
