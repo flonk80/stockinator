@@ -27,6 +27,8 @@ namespace Stockinator.Common.Models
 
         public required long NewestDataTimestamp { get; set; }
 
+        public required List<DailyStock> LatestLookback { get; set; }
+
         [JsonIgnore]
         public Sequential? SequentialModel { get; set; }
     }
