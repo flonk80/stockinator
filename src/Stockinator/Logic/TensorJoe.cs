@@ -31,29 +31,6 @@ namespace Stockinator.Logic
             LoadModels();
         }
 
-        //public float PredictPrice(long timestamp, string tickerSymbol)
-        //{
-        //    // Ensure model is trained for this ticker
-        //    if (!models.ContainsKey(tickerSymbol))
-        //    {
-        //        Console.WriteLine($"Training model for {tickerSymbol}...");
-        //        TrainModel(tickerSymbol);
-        //    }
-
-        //    var model = models[tickerSymbol];
-        //    var inputData = PreparePredictionData(tickerSymbol, timestamp);
-
-        //    if (inputData == null)
-        //    {
-        //        Console.WriteLine("Insufficient data to make a prediction.");
-        //        return float.NaN;
-        //    }
-
-        //    var prediction = model.Predict(inputData);
-
-        //    return 0;
-        //}
-
         public void ShowGraphs(string tickerSymbol)
         {
             var modelData = _models.FirstOrDefault(x => x.TickerSymbol == tickerSymbol) ?? throw new Exception("Model data is null");
@@ -75,7 +52,7 @@ namespace Stockinator.Logic
             };
 
             var lossChart = Chart.Plot(new[] { lossTrace, valLossTrace });
-            lossChart.WithTitle($"Training vs Validation Loss for {modelData.TickerSymbol}");
+            lossChart.WithTitle($"Training & Validation Training Loss for {modelData.TickerSymbol}");
             lossChart.WithYTitle("Loss");
             lossChart.WithXTitle("Epochs");
 
@@ -90,13 +67,13 @@ namespace Stockinator.Logic
             var validationMaeTrace = new Scatter
             {
                 x = modelData.Epochs,
-                y = modelData.MeanSquaredError,
+                y = modelData.ValidationMeanSquaredError,
                 mode = "lines",
                 name = "Validation Mean Squared Error"
             };
 
             var maeChart = Chart.Plot(new[] { maeTrace, validationMaeTrace });
-            maeChart.WithTitle($"Mean Squared Error for {modelData.TickerSymbol}");
+            maeChart.WithTitle($"Mean Squared Error & Validation Mean Squared Error for {modelData.TickerSymbol}");
             maeChart.WithYTitle("Mean Squared Error");
             maeChart.WithXTitle("Epochs");
 
@@ -153,6 +130,7 @@ namespace Stockinator.Logic
                 TestPredictionValues = predictions.GetData<float>(),
                 TestActualValues = yValidation.GetData<double>(),
                 Epochs = modelHistory.Epoch,
+                LatestLookback = stockData.DailyStocks.TakeLast(Lookback).ToList(),
                 SequentialModel = model
             };
 
@@ -290,33 +268,5 @@ namespace Stockinator.Logic
 
             return ((xSplit[0], ySplit[0]), (xSplit[1], ySplit[1]));
         }
-
-        //private NDarray PreparePredictionData(string tickerSymbol, long timestamp)
-        //{
-        //    if (!stockData.ContainsKey(tickerSymbol)) return null;
-
-        //    var data = stockData[tickerSymbol];
-        //    if (data.shape[0] < Lookback) return null;
-
-        //    return np.expand_dims(data[$"{data.shape[0] - Lookback}:{data.shape[0]}, :"], axis: 0);
-        //}
-
-        //private void SaveModel(Model model, string tickerSymbol)
-        //{
-        //    var path = $"{tickerSymbol}_model";
-        //    model.save_weights(path);
-        //    Console.WriteLine($"Model saved: {path}");
-        //}
-
-        //private Model LoadModel(string tickerSymbol)
-        //{
-        //    var path = $"{tickerSymbol}_model";
-        //    if (!File.Exists(path)) return null;
-
-        //    var model = BuildLstmModel(Lookback, FeatureCount);
-        //    model.load_weights(path);
-        //    Console.WriteLine($"Loaded model: {path}");
-        //    return model;
-        //}
     }
 }
