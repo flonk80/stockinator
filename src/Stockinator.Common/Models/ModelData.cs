@@ -13,6 +13,8 @@ namespace Stockinator.Common.Models
 
         public required double[] MeanSquaredError { get; set; }
 
+        public required int[] Epochs { get; set; }
+
         public required long NewestDataTimestamp { get; set; }
 
         [JsonIgnore]

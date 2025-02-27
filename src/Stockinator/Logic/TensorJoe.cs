@@ -5,6 +5,9 @@ using Keras.Models;
 using Keras.Optimizers;
 using Numpy;
 using System.Text.Json;
+using Tensorflow;
+using XPlot.Plotly;
+using System.Diagnostics;
 
 namespace Stockinator.Logic
 {
@@ -53,6 +56,48 @@ namespace Stockinator.Logic
         //    return 0;
         //}
 
+        public void ShowGraphs(string tickerSymbol)
+        {
+            var modelData = _models.FirstOrDefault(x => x.TickerSymbol == tickerSymbol);
+
+            if (modelData == null)
+            {
+                throw new Exception("Model data is null");
+            }
+
+            var lossTrace = new Scatter
+            {
+                x = modelData.Epochs,
+                y = modelData.Loss,
+                mode = "lines",
+                name = "Training Loss"
+            };
+
+            //var temp = modelData.ModelWeightsPath;
+
+            var lossChart = Chart.Plot(new[] { lossTrace });
+            lossChart.WithTitle($"Training vs Validation Loss for {modelData.TickerSymbol}");
+            lossChart.WithYTitle("Loss");
+            lossChart.WithXTitle("Epochs");
+
+            // Mean Squared Error
+            var maeTrace = new Scatter
+            {
+                x = modelData.Epochs,
+                y = modelData.MeanSquaredError,
+                mode = "lines",
+                name = "Mean Squared Error"
+            };
+
+            var maeChart = Chart.Plot(new[] { maeTrace });
+            maeChart.WithTitle($"Mean Squared Error for {modelData.TickerSymbol}");
+            maeChart.WithYTitle("Mean Squared Error");
+            maeChart.WithXTitle("Epochs");
+
+            lossChart.Show();
+            maeChart.Show();
+        }
+
         public void TrainModel(StockData stockData)
         {
              var (knownData, targetDate) = CreateTrainingData(stockData);
@@ -69,6 +114,7 @@ namespace Stockinator.Logic
                 ModelWeightsPath = $"{WeightsDirectory}\\{stockData.TickerSymbol}_weights.h5",
                 Loss = modelHistory.HistoryLogs["loss"],
                 MeanSquaredError = modelHistory.HistoryLogs["mae"],
+                Epochs = modelHistory.Epoch,
                 SequentialModel = model
             };
 
