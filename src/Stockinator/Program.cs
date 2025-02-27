@@ -11,7 +11,7 @@ var result = await dataFetcher.FetchStockPeriodAsync("AAPL", DateTime.Today.AddD
 
 var joe = new TensorJoe();
 
-//joe.TrainModel(result);
+joe.TrainModel(result);
 
 joe.ShowGraphs("AAPL");
 

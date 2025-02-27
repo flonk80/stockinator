@@ -11,9 +11,19 @@ namespace Stockinator.Common.Models
 
         public required double[] Loss { get; set; }
 
+        public required double[] ValidationLoss { get; set; }
+
         public required double[] MeanSquaredError { get; set; }
 
+        public required double[] ValidationMeanSquaredError { get; set; }
+
+        public required double[] TestPredictionValues { get; set; }
+
+        public required double[] TestActualValues { get; set; }
+
         public required int[] Epochs { get; set; }
+
+        public int TestCount => TestPredictionValues.Length;
 
         public required long NewestDataTimestamp { get; set; }
 

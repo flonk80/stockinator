@@ -8,6 +8,7 @@ using System.Text.Json;
 using Tensorflow;
 using XPlot.Plotly;
 using System.Diagnostics;
+using System.Linq;
 
 namespace Stockinator.Logic
 {
@@ -58,13 +59,9 @@ namespace Stockinator.Logic
 
         public void ShowGraphs(string tickerSymbol)
         {
-            var modelData = _models.FirstOrDefault(x => x.TickerSymbol == tickerSymbol);
+            var modelData = _models.FirstOrDefault(x => x.TickerSymbol == tickerSymbol) ?? throw new Exception("Model data is null");
 
-            if (modelData == null)
-            {
-                throw new Exception("Model data is null");
-            }
-
+            // Loss
             var lossTrace = new Scatter
             {
                 x = modelData.Epochs,
@@ -72,10 +69,15 @@ namespace Stockinator.Logic
                 mode = "lines",
                 name = "Training Loss"
             };
+            var valLossTrace = new Scatter
+            {
+                x = modelData.Epochs,
+                y = modelData.ValidationLoss,
+                mode = "lines",
+                name = "Validation Training Loss"
+            };
 
-            //var temp = modelData.ModelWeightsPath;
-
-            var lossChart = Chart.Plot(new[] { lossTrace });
+            var lossChart = Chart.Plot(new[] { lossTrace, valLossTrace });
             lossChart.WithTitle($"Training vs Validation Loss for {modelData.TickerSymbol}");
             lossChart.WithYTitle("Loss");
             lossChart.WithXTitle("Epochs");
@@ -88,24 +90,60 @@ namespace Stockinator.Logic
                 mode = "lines",
                 name = "Mean Squared Error"
             };
+            var validationMaeTrace = new Scatter
+            {
+                x = modelData.Epochs,
+                y = modelData.MeanSquaredError,
+                mode = "lines",
+                name = "Validation Mean Squared Error"
+            };
 
-            var maeChart = Chart.Plot(new[] { maeTrace });
+            var maeChart = Chart.Plot(new[] { maeTrace, validationMaeTrace });
             maeChart.WithTitle($"Mean Squared Error for {modelData.TickerSymbol}");
             maeChart.WithYTitle("Mean Squared Error");
             maeChart.WithXTitle("Epochs");
 
+            // Test
+            var predictionTrace = new Scatter
+            {
+                x = modelData.TestCount,
+                y = modelData.TestPredictionValues,
+                mode = "lines",
+                name = "Predicted Value"
+            };
+            var actualTrace = new Scatter
+            {
+                x = modelData.TestCount,
+                y = modelData.TestActualValues,
+                mode = "lines",
+                name = "Actual Value"
+            };
+
+            var testChart = Chart.Plot(new[] { predictionTrace, actualTrace });
+            testChart.WithTitle($"Predicted vs. Actual Values for {modelData.TickerSymbol}");
+            testChart.WithYTitle("Stock Price");
+            testChart.WithXTitle("Days");
+
             lossChart.Show();
             maeChart.Show();
+            testChart.Show();
         }
 
         public void TrainModel(StockData stockData)
         {
-             var (knownData, targetDate) = CreateTrainingData(stockData);
+            //var (knownData, targetDate) = CreateTrainingData(stockData);
+            var ((xTrain, yTrain), (xValidation, yValidation)) = CreateTrainValTestData(stockData);
 
             var model = BuildLstmModel();
 
             Console.WriteLine("Training model...");
-            var modelHistory = model.Fit(knownData, targetDate, batch_size: BatchSize, epochs: Epochs);
+            var modelHistory = model.Fit(xTrain, 
+                                         yTrain, 
+                                         validation_data: [xValidation, yValidation], 
+                                         batch_size: BatchSize, 
+                                         epochs: Epochs);
+
+            var predictions = model.Predict(xValidation);
 
             var modelData = new ModelData
             {
@@ -113,7 +151,11 @@ namespace Stockinator.Logic
                 NewestDataTimestamp = stockData.DailyStocks[^1].UnixTimeStamp,
                 ModelWeightsPath = $"{WeightsDirectory}\\{stockData.TickerSymbol}_weights.h5",
                 Loss = modelHistory.HistoryLogs["loss"],
+                ValidationLoss = modelHistory.HistoryLogs["val_loss"],
                 MeanSquaredError = modelHistory.HistoryLogs["mae"],
+                ValidationMeanSquaredError = modelHistory.HistoryLogs["val_mae"],
+                TestPredictionValues = predictions.GetData<double>(),
+                TestActualValues = yValidation.GetData<double>(),
                 Epochs = modelHistory.Epoch,
                 SequentialModel = model
             };
@@ -216,6 +258,50 @@ namespace Stockinator.Logic
             }
 
             return (new NDarray(xData), new NDarray(yData));
+        }
+
+        private static ((NDarray, NDarray), (NDarray, NDarray)) CreateTrainValTestData(StockData data)
+        {
+            const double TrainSplit = 0.8;
+            const double ValSplit = 0.2;
+
+            var dailyStockCount = data.DailyStocks.Count;
+
+            if (dailyStockCount < Lookback)
+            {
+                throw new ArgumentException("Not enough data points to create training sequences.");
+            }
+
+            // Total number of sequences
+            int totalSize = dailyStockCount - Lookback + 1;
+
+            // Calculate split indices
+            int trainSize = (int)(TrainSplit * totalSize);
+
+            var xData = new double[totalSize, Lookback, FeatureCount];
+            var yData = new double[totalSize, 1];
+
+            for (var i = 0; i < totalSize; i++)
+            {
+                for (var j = 0; j < Lookback; j++)
+                {
+                    xData[i, j, 0] = data.DailyStocks[i + j].CloseNormalized;
+                    xData[i, j, 1] = data.DailyStocks[i + j].OpenNormalized;
+                    xData[i, j, 2] = data.DailyStocks[i + j].HighNormalized;
+                    xData[i, j, 3] = data.DailyStocks[i + j].LowNormalized;
+                    xData[i, j, 4] = data.DailyStocks[i + j].VolumeNormalized;
+                }
+
+                yData[i, 0] = data.DailyStocks[i + Lookback - 1].CloseNormalized;
+            }
+            
+            var xSplit = np.split(new NDarray(xData), [trainSize]);
+            var ySplit = np.split(new NDarray(yData), [trainSize]);
+
+            return (
+                (xSplit[0], ySplit[0]),
+                (xSplit[1], ySplit[1])
+            );
         }
 
         //private NDarray PreparePredictionData(string tickerSymbol, long timestamp)
