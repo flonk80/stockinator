@@ -2,11 +2,6 @@
 {
     public class DailyStock
     {
-        private static readonly double _normalizationIndex = 10.0;
-
-        private readonly double _globalBaselinePrice;
-        private readonly double _globalBaselineVolume;
-
         public required long UnixTimeStamp { get; set; }
 
         public required double Open { get; set; }
@@ -19,20 +14,14 @@
 
         public required double Volume { get; set; }
 
-        public double OpenNormalized => (Open / _globalBaselinePrice) * _normalizationIndex;
+        public double OpenNormalized { get; set; }
 
-        public double CloseNormalized => (Close / _globalBaselinePrice) * _normalizationIndex;
+        public double CloseNormalized { get; set; }
 
-        public double HighNormalized => (High / _globalBaselinePrice) * _normalizationIndex;
+        public double HighNormalized { get; set; }
 
-        public double LowNormalized => (Low / _globalBaselinePrice) * _normalizationIndex;
+        public double LowNormalized { get; set; }
 
-        public double VolumeNormalized => (Volume / _globalBaselineVolume) * _normalizationIndex;
-
-        public DailyStock(double globalBaselinePrice, double globalBaselineVolume)
-        {
-            _globalBaselinePrice = globalBaselinePrice;
-            _globalBaselineVolume = globalBaselineVolume;
-        }
+        public double VolumeNormalized { get; set; }
     }
 }

@@ -38,13 +38,11 @@ namespace Stockinator.Common.DataFetching
 
                 var timeStamps = chart.Result?[0].TimeStamp ?? throw new Exception("Timestamp is null");
                 var quote = chart.Result[0].Indicators?.Quote?[0] ?? throw new Exception("Quote is null");
-                var baselinePrice = quote.Open?[0] ?? throw new Exception("No baseline price could be set");
-                var baselineVolume = quote.Volume?[0] ?? throw new Exception("No baseline volume could be set");
 
-                return new StockData
+                var stockData = new StockData
                 {
                     TickerSymbol = tickerSymbol,
-                    DailyStocks = timeStamps.Select((x, i) => new DailyStock(baselinePrice, baselineVolume)
+                    DailyStocks = timeStamps.Select((x, i) => new DailyStock
                     {
                         UnixTimeStamp = x,
                         Close = quote.Close?[i] ?? throw new Exception("Close is invalid"),
@@ -54,6 +52,17 @@ namespace Stockinator.Common.DataFetching
                         Volume = quote.Volume?[i] ?? throw new Exception("Volume is invalid"),
                     }).ToList()
                 };
+
+                foreach (var dailyStock in stockData.DailyStocks)
+                {
+                    dailyStock.OpenNormalized = (dailyStock.Open - quote.Open.Min()) / (quote.Open.Max() - quote.Open.Min());
+                    dailyStock.CloseNormalized = (dailyStock.Close - quote.Close.Min()) / (quote.Close.Max() - quote.Close.Min());
+                    dailyStock.HighNormalized = (dailyStock.High - quote.High.Min()) / (quote.High.Max() - quote.High.Min());
+                    dailyStock.LowNormalized = (dailyStock.Low - quote.Low.Min()) / (quote.Low.Max() - quote.Low.Min());
+                    dailyStock.VolumeNormalized = (dailyStock.Volume - quote.Volume.Min()) / (quote.Volume.Max() - quote.Volume.Min());
+                }
+
+                return stockData;
             }
 
             throw new Exception("Couldn't fetch stock period");

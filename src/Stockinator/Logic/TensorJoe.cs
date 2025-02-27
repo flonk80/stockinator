@@ -5,10 +5,7 @@ using Keras.Models;
 using Keras.Optimizers;
 using Numpy;
 using System.Text.Json;
-using Tensorflow;
 using XPlot.Plotly;
-using System.Diagnostics;
-using System.Linq;
 
 namespace Stockinator.Logic
 {
@@ -16,7 +13,7 @@ namespace Stockinator.Logic
     {
         private const int BatchSize = 16;
         private const int Epochs = 25;
-        private const int Lookback = 30;  // 120
+        private const int Lookback = 30;  
         private const int FeatureCount = 5;
         private const string ModelDataDirectory = "C:\\Stockinator\\ModelData";
         private const string WeightsDirectory = $"{ModelDataDirectory}\\ModelWeights";
@@ -131,7 +128,6 @@ namespace Stockinator.Logic
 
         public void TrainModel(StockData stockData)
         {
-            //var (knownData, targetDate) = CreateTrainingData(stockData);
             var ((xTrain, yTrain), (xValidation, yValidation)) = CreateTrainValTestData(stockData);
 
             var model = BuildLstmModel();
@@ -144,7 +140,7 @@ namespace Stockinator.Logic
                                          epochs: Epochs);
 
             var predictions = model.Predict(xValidation);
-
+            
             var modelData = new ModelData
             {
                 TickerSymbol = stockData.TickerSymbol,
@@ -154,7 +150,7 @@ namespace Stockinator.Logic
                 ValidationLoss = modelHistory.HistoryLogs["val_loss"],
                 MeanSquaredError = modelHistory.HistoryLogs["mae"],
                 ValidationMeanSquaredError = modelHistory.HistoryLogs["val_mae"],
-                TestPredictionValues = predictions.GetData<double>(),
+                TestPredictionValues = predictions.GetData<float>(),
                 TestActualValues = yValidation.GetData<double>(),
                 Epochs = modelHistory.Epoch,
                 SequentialModel = model
@@ -215,17 +211,17 @@ namespace Stockinator.Logic
         {
             var model = new Sequential();
 
-            model.Add(new LSTM(units: 50, // 64
+            model.Add(new LSTM(units: 50, 
                                input_shape: (Lookback, FeatureCount), 
                                return_sequences: true));
 
-            model.Add(new LSTM(units: 50, // 64
+            model.Add(new LSTM(units: 50,
                                return_sequences: false));
 
-            model.Add(new Dense(units: 25, // 32
+            model.Add(new Dense(units: 25,
                                 activation: "relu"));
 
-            model.Add(new Dense(units: 1)); // 1
+            model.Add(new Dense(units: 1));
 
             model.Compile(optimizer: new Adam(lr: 0.001f), loss: "mean_squared_error", metrics: ["mae"]); 
 
@@ -262,9 +258,6 @@ namespace Stockinator.Logic
 
         private static ((NDarray, NDarray), (NDarray, NDarray)) CreateTrainValTestData(StockData data)
         {
-            const double TrainSplit = 0.8;
-            const double ValSplit = 0.2;
-
             var dailyStockCount = data.DailyStocks.Count;
 
             if (dailyStockCount < Lookback)
@@ -272,11 +265,8 @@ namespace Stockinator.Logic
                 throw new ArgumentException("Not enough data points to create training sequences.");
             }
 
-            // Total number of sequences
-            int totalSize = dailyStockCount - Lookback + 1;
-
-            // Calculate split indices
-            int trainSize = (int)(TrainSplit * totalSize);
+            var totalSize = dailyStockCount - Lookback + 1;
+            var trainSize = (int)(0.8 * totalSize);
 
             var xData = new double[totalSize, Lookback, FeatureCount];
             var yData = new double[totalSize, 1];
@@ -298,10 +288,7 @@ namespace Stockinator.Logic
             var xSplit = np.split(new NDarray(xData), [trainSize]);
             var ySplit = np.split(new NDarray(yData), [trainSize]);
 
-            return (
-                (xSplit[0], ySplit[0]),
-                (xSplit[1], ySplit[1])
-            );
+            return ((xSplit[0], ySplit[0]), (xSplit[1], ySplit[1]));
         }
 
         //private NDarray PreparePredictionData(string tickerSymbol, long timestamp)

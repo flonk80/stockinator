@@ -17,7 +17,7 @@ namespace Stockinator.Common.Models
 
         public required double[] ValidationMeanSquaredError { get; set; }
 
-        public required double[] TestPredictionValues { get; set; }
+        public required float[] TestPredictionValues { get; set; }
 
         public required double[] TestActualValues { get; set; }
 
